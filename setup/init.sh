@@ -6,7 +6,7 @@ userarn=$(aws iam get-user --user-name github-action-user | jq -r .User.Arn)
 
 # Download tool for manipulating aws-auth
 echo "Downloading tool..."
-curl -X GET -L https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v0.6.2/aws-iam-authenticator_0.6.2_darwin_arm64 -o aws-iam-authenticator
+curl -X GET -L https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v0.6.28/aws-iam-authenticator_0.6.28_windows_amd64.exe -o aws-iam-authenticator
 chmod +x aws-iam-authenticator
 
 echo "Updating permissions"

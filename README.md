@@ -86,7 +86,6 @@ terraform output
 5. Under `Access keys`  select `Create access key`
 6. Select `Application running outside AWS` and click `Next`, then `Create access key` to finish creating the keys
 7. On the last page, make sure to copy/paste these keys for storing in Github Secrets
-![image](https://user-images.githubusercontent.com/57732284/221991526-ec4af661-b200-48cd-9087-6f1b3b9820b3.png)
 
 ### Add Github Action user to Kubernetes
 
@@ -136,13 +135,13 @@ CI=true npm test
 
 
 # Expected output
-PASS src/components/__tests__/MovieList.test.js
-PASS src/components/__tests__/App.test.js
+ PASS  src/components/__tests__/MovieList.test.js (10.938 s)
+ PASS  src/components/__tests__/App.test.js (10.951 s)
 
 Test Suites: 2 passed, 2 total
 Tests:       3 passed, 3 total
 Snapshots:   0 total
-Time:        1.33 s
+Time:        24.965 s
 Ran all test suites.
 ```
 
@@ -222,7 +221,7 @@ FAIL_LINT=true npm run lint
 > eslint .
 
 
-/home/kirby/udacity/ci-cd/project/solution/frontend/src/components/MovieDetails.js
+C:\udacity\project4\frontend\src\components\MovieDetails.js
   4:24  error  'movie' is missing in props validation     react/prop-types
   7:70  error  'movie.id' is missing in props validation  react/prop-types
 
@@ -287,50 +286,10 @@ pipenv install
 # Run the tests
 pipenv run test
 
-# Expected output
-================================================================== test session starts ==================================================================
-platform linux -- Python 3.10.6, pytest-7.2.1, pluggy-1.0.0 -- /home/kirby/.local/share/virtualenvs/backend-AXGg_iGk/bin/python
-cachedir: .pytest_cache
-rootdir: /home/kirby/udacity/cd12354-build-ci-cd-pipelines-monitoring-and-logging/project/solution/backend
-collected 3 items
-
-test_app.py::test_movies_endpoint_returns_200 PASSED                                                                                              [ 33%]
-test_app.py::test_movies_endpoint_returns_json PASSED                                                                                             [ 66%]
-test_app.py::test_movies_endpoint_returns_valid_data PASSED                                                                                       [100%]
-```
-
 To simulate failing the backend tests, run the following command:
 
 ```bash
 FAIL_TEST=true pipenv run test
-
-# Expected output
-==================================================================== test session starts ====================================================================
-platform linux -- Python 3.10.6, pytest-7.2.1, pluggy-1.0.0 -- /home/kirby/.local/share/virtualenvs/backend-AXGg_iGk/bin/python
-cachedir: .pytest_cache
-rootdir: /home/kirby/udacity/ci-cd/project/solution/backend
-collected 3 items
-
-test_app.py::test_movies_endpoint_returns_200 FAILED                                                                                                  [ 33%]
-test_app.py::test_movies_endpoint_returns_json PASSED                                                                                                 [ 66%]
-test_app.py::test_movies_endpoint_returns_valid_data PASSED                                                                                           [100%]
-
-========================================================================= FAILURES ==========================================================================
-_____________________________________________________________ test_movies_endpoint_returns_200 ______________________________________________________________
-
-    def test_movies_endpoint_returns_200():
-        with app.test_client() as client:
-            status_code = os.getenv("FAIL_TEST", 200)
-            response = client.get("/movies/")
->           assert response.status_code == status_code
-E           AssertionError: assert 200 == 'true'
-E            +  where 200 = <WrapperTestResponse streamed [200 OK]>.status_code
-
-test_app.py:9: AssertionError
-================================================================== short test summary info ==================================================================
-FAILED test_app.py::test_movies_endpoint_returns_200 - AssertionError: assert 200 == 'true'
-================================================================ 1 failed, 2 passed in 0.11s ================================================================
-```
 
 ### Running linter
 
