@@ -1,0 +1,89 @@
+name: Frontend Continuous Deployment
+on:
+  workflow_dispatch:
+  # Automatic trigger on push or merge to the main branch
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the code from the repository.
+      - uses: actions/checkout@v3
+
+      # Set up a Node.js environment using the specified node version.
+      - uses: actions/setup-node@v3
+        with:
+          node-version: latest
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      # Install the dependencies.
+      - run: cd frontend && npm ci
+
+      # Run the linter.
+      - run: cd frontend && npm run lint
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the code from the repository.
+      - uses: actions/checkout@v3
+
+      # Set up a Node.js environment using the specified node version.
+      - uses: actions/setup-node@v3
+        with:
+          node-version: latest
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      # Install the dependencies.
+      - run: cd frontend && npm ci
+
+      # Run the test.
+      - run: cd frontend && npm run test
+
+  build:
+    needs: [lint, test]
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the code from the repository.
+      - uses: actions/checkout@v3
+
+      # Set up a Node.js environment using the specified node version.
+      - uses: actions/setup-node@v3
+        with:
+          node-version: latest
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Configure AWS credential
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to AWS ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag and push docker image to AWS ECR
+        working-directory: frontend
+        run: |
+          docker build --build-arg=REACT_APP_MOVIE_API_URL=${{ vars.REACT_APP_MOVIE_API_URL }} --tag ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/frontend:${GITHUB_SHA::7} .
+          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/frontend:${GITHUB_SHA::7}
+
+      - name: Kubeconfig login
+        run: |
+          aws eks update-kubeconfig --name cluster --region us-east-1
+
+      - name: Deploy docker image by kustomize
+        working-directory: frontend/k8s
+        run: |
+          kustomize edit set image frontend=${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/frontend:${GITHUB_SHA::7}
+          kustomize build | kubectl apply -f -

@@ -1,0 +1,82 @@
+name: Backend Continuous Deployment
+on:
+  workflow_dispatch:
+  # Automatic trigger on push or merge to the main branch
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the code from the repository.
+      - uses: actions/checkout@v3
+
+      # Set up a python environment using the specified version.
+      - uses: actions/setup-python@v5
+        with:
+          node-version: '3.10'
+
+      # Install the dependencies.
+      - run: cd backend && python -m pip install --upgrade pip
+      - run: cd backend && pip install pipenv
+      - run: cd backend && pip install flake8
+
+      # Run the linter.
+      - run: cd backend && pipenv run lint
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the code from the repository.
+      - uses: actions/checkout@v3
+
+      # Set up a python environment using the specified version.
+      - uses: actions/setup-python@v5
+        with:
+          node-version: '3.10'
+
+      # Install the dependencies.
+      - run: cd backend && python -m pip install --upgrade pip
+      - run: cd backend && pip install pipenv
+      - run: cd backend && pip install flake8
+
+      # Run the test.
+      - run: cd backend && pipenv install pytest && pipenv run test
+
+  build:
+    needs: [lint, test]
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the code from the repository.
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credential
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to AWS ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag and push docker image to AWS ECR
+        working-directory: backend
+        run: |
+          docker build --tag ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/backend:${GITHUB_SHA::7} .
+          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/backend:${GITHUB_SHA::7}
+
+      - name: Kubeconfig login
+        run: |
+          aws eks update-kubeconfig --name cluster --region us-east-1
+
+      - name: Deploy docker image by kustomize
+        working-directory: backend/k8s
+        run: |
+          kustomize edit set image backend=${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/backend:${GITHUB_SHA::7}
+          kustomize build | kubectl apply -f -
