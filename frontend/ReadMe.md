@@ -31,3 +31,4 @@ We're using AWS to host our Kubernetes cluster and Terraform to manage our infra
 ---
 
 As you work on this project, remember to focus on understanding each part of the pipeline. Make sure that all your workflows are correctly configured and that they trigger as expected. Keep the best practices in mind as you work and ensure that your code is clean and well-tested.
+
